@@ -7,11 +7,20 @@
    * board fills (tie)
    */
 class Game {
-  constructor(width = 7, height = 6) {
+  constructor(width = 7, height = 6,
+    player1Color = "red", player2Color = "blue") {
     this.width = width;
     this.height = height;
-    this.currPlayer = 1; // active player: 1 or 2
     this.board = []; // array of rows, each row is array of cells  (board[y][x])
+
+    this.currPlayer = new Player(player1Color); // active player
+    this.otherPlayer = new Player(player2Color);
+
+    this.handleClick = this.handleClick.bind(this);
+
+    // refresh the board on DOM
+    document.getElementById('board').innerHTML = "";
+
     this.makeBoard();
     this.makeHtmlBoard();
   }
@@ -34,7 +43,7 @@ class Game {
     // make column tops (clickable area for adding a piece to that column)
     const top = document.createElement('tr');
     top.setAttribute('id', 'column-top');
-    top.addEventListener('click', this.handleClick.bind(this)); //try to put in constructor
+    top.addEventListener('click', this.handleClick); //try to put in constructor
 
     for (let x = 0; x < this.width; x++) {
       const headCell = document.createElement('td');
@@ -74,7 +83,7 @@ class Game {
   placeInTable(y, x) {
     const piece = document.createElement('div');
     piece.classList.add('piece');
-    piece.classList.add(`p${this.currPlayer}`);
+    piece.style.backgroundColor = this.currPlayer.color;
     piece.style.top = -50 * (y + 2);
 
     const spot = document.getElementById(`${y}-${x}`);
@@ -84,7 +93,10 @@ class Game {
   /** endGame: announce game end */
 
   endGame(msg) {
-    alert(msg);
+    setTimeout(alert, 200, msg);
+
+    let topRow = document.querySelector("#column-top");
+    topRow.removeEventListener("click", this.handleClick);
   }
 
   /** handleClick: handle click of column top to play piece */
@@ -100,41 +112,43 @@ class Game {
     }
 
     // place piece in board and add to HTML table
-    this.board[y][x] = this.currPlayer;
+    this.board[y][x] = this.currPlayer.color;
     this.placeInTable(y, x);
-    
+
     // check for win
     if (this.checkForWin()) {
-      return this.endGame(`Player ${this.currPlayer} won!`);
+      return this.endGame(`${this.currPlayer.color} player won!`);
     }
-    
+
     // check for tie
     if (this.board.every(row => row.every(cell => cell))) {
       return this.endGame('Tie!');
     }
-      
+
     // switch players
-    this.currPlayer = this.currPlayer === 1 ? 2 : 1;
+    [this.currPlayer, this.otherPlayer] = [this.otherPlayer, this.currPlayer];
   }
 
   /** checkForWin: check board cell-by-cell for "does a win start here?" */
 
   checkForWin() {
-    // function _win(cells) {
-    //   // Check four cells to see if they're all color of current player
-    //   //  - cells: list of four (y, x) cells
-    //   //  - returns true if all are legal coordinates & all match currPlayer
 
-    //   return cells.every(
-    //     ([y, x]) =>
-    //       y >= 0 &&
-    //       y < this.height &&
-    //       x >= 0 &&
-    //       x < this.width &&
-    //       this.board[y][x] === this.currPlayer
-    //   );
-    // }
-    
+    function _win(cells) {
+      // Check four cells to see if they're all color of current player
+      //  - cells: list of four (y, x) cells
+      //  - returns true if all are legal coordinates & all match currPlayer
+
+      return cells.every(
+        ([y, x]) =>
+          y >= 0 &&
+          y < this.height &&
+          x >= 0 &&
+          x < this.width &&
+          this.board[y][x] === this.currPlayer.color
+      );
+    }
+
+    let boundWin = _win.bind(this);
 
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
@@ -146,27 +160,30 @@ class Game {
         const diagDL = [[y, x], [y + 1, x - 1], [y + 2, x - 2], [y + 3, x - 3]];
 
         // find winner (only checking each win-possibility as needed)
-        if (this._win(horiz) || this._win(vert) || this._win(diagDR) || this._win(diagDL)) {
+        if (boundWin(horiz) || boundWin(vert) ||
+            boundWin(diagDR) || boundWin(diagDL)) {
           return true;
         }
       }
     }
   }
+}
 
-  _win(cells) {
-    // Check four cells to see if they're all color of current player
-    //  - cells: list of four (y, x) cells
-    //  - returns true if all are legal coordinates & all match currPlayer
 
-    return cells.every(
-      ([y, x]) =>
-        y >= 0 &&
-        y < this.height &&
-        x >= 0 &&
-        x < this.width &&
-        this.board[y][x] === this.currPlayer
-    );
+// The player class holds the color of the game pieces
+class Player {
+  constructor(color) {
+    this.color = color;
   }
 }
 
-let game1 = new Game(7, 6);
+let startGameForm = document.querySelector("#startGame");
+startGameForm.addEventListener("submit", (evt) => {
+  evt.preventDefault();
+
+  let color1 = evt.target.p1Color.value || undefined;
+  let color2 = evt.target.p2Color.value || undefined;
+
+  new Game(7, 6, color1, color2);
+});
+
