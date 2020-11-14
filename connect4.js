@@ -1,5 +1,12 @@
 'use strict';
 
+/** to add more than 2 players
+ * need a button to add players (cant click after startgame is clicked)
+ * which when clicked will add input field
+ * need to accept variable number of player instances
+ * 
+ */
+
 /** Connect Four
    *
    * Player 1 and 2 alternate turns. On each turn, a piece is dropped down a
@@ -178,12 +185,32 @@ class Player {
 }
 
 let startGameForm = document.querySelector("#startGame");
-startGameForm.addEventListener("submit", (evt) => {
+startGameForm.addEventListener("submit", startGame);
+
+function startGame(evt) {
   evt.preventDefault();
-
-  let color1 = evt.target.p1Color.value || undefined;
-  let color2 = evt.target.p2Color.value || undefined;
-
+  // let color1 = evt.target.p1Color.value || undefined;
+  // let color2 = evt.target.p2Color.value || undefined;
+  let playersList = [];
+  for (let i = 0; i < numPlayers; i++) {
+    let color = evt.target[`p${i + 1}Color`].value;
+    let player = new Player(color);
+    playersList.push(player);
+  }
+  
   new Game(7, 6, color1, color2);
-});
+}
 
+let numPlayers = 2;
+// add new player
+let newPlayerButton = document.getElementById('newPlayerButton');
+newPlayerButton.addEventListener('click', addNewPlayer);
+
+
+function addNewPlayer(evt) {
+  numPlayers++
+  let newPlayerInput = document.createElement('input');
+  newPlayerInput.setAttribute('placeholder', `Player ${numPlayers} Color`)
+  newPlayerInput.setAttribute('id', `p${numPlayers}Color`)
+  startGameForm.append(newPlayerInput);
+}
